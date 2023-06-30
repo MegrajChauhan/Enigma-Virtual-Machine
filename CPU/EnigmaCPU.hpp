@@ -248,6 +248,75 @@ namespace CPU
     {
         switch (curr_instr)
         {
+        case ADD:
+            InstructionsImpl::add();
+            break;
+        case SUB:
+            InstructionsImpl::sub ();
+            break;
+        case MUL:
+            InstructionsImpl::mul();
+            break;
+        case DIV:
+            InstructionsImpl::div();
+            break;
+        case INC:
+            InstructionsImpl::inc();
+            break;
+        case DEC:
+            InstructionsImpl::dec();
+            break;
+        case NEG:
+            InstructionsImpl::neg();
+            break;
+        case MOV:
+            InstructionsImpl::mov();
+            break;
+        case MOVSX:
+            InstructionsImpl::movsx();
+            break;
+        case MOVZX:
+            InstructionsImpl::movzx();
+            break;
+        case LOAD:
+            InstructionsImpl::load();
+            break;
+        case STORE:
+            InstructionsImpl::store();
+            break;
+        case LEA:
+            InstructionsImpl::lea();
+            break;
+        case PUSH:
+            InstructionsImpl::push();
+            break;
+        case POP:
+            InstructionsImpl::pop();
+            break;
+        case PUSH_REGR:
+            InstructionsImpl::pushr();
+            break;
+        case POP_REGR:
+            InstructionsImpl::popr();
+            break;
+        case AND:
+            InstructionsImpl::iand();
+            break;
+        case OR:
+            InstructionsImpl::ior();
+            break;
+        case NOT:
+            InstructionsImpl::inot();
+            break;
+        case XOR:
+            InstructionsImpl::ixor();
+            break;
+        case LSHIFT:
+            InstructionsImpl::lshift();
+            break;
+        case RSHIFT:
+            InstructionsImpl::rshift();
+            break;
         case CMP:
             InstructionsImpl::cmp();
             break;
@@ -278,6 +347,36 @@ namespace CPU
         case JZ:
             InstructionsImpl::jz();
             break;
+        case MOVZ:
+            InstructionsImpl::movz();
+            break;
+        case MOVNZ:
+            InstructionsImpl::movnz();
+            break;
+        case MOVN:
+            InstructionsImpl::movn();
+            break;
+        case MOVNN:
+            InstructionsImpl::movnn();
+            break;
+        case MOVE:
+            InstructionsImpl::move();
+            break;
+        case MOVNE:
+            InstructionsImpl::movne();
+            break;
+        case MOVG:
+            InstructionsImpl::movg();
+            break;       
+        case MOVGE:
+            InstructionsImpl::movge();
+            break;
+        case MOVS:
+            InstructionsImpl::movs();
+            break;
+        case MOVSE:
+            InstructionsImpl::movse();
+            break;       
         case NOP:
             break;
         case SYSCALL:
