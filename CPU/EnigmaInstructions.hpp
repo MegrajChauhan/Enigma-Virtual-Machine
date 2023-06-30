@@ -734,14 +734,115 @@ void InstructionsImpl::sub()
     }
 }
 
+
+void InstructionsImpl::mul()
+{
+    auto format = CPU::instr >> 56;
+    switch (format)
+    {
+    case 0:
+    {
+        // R-R
+        CPU::_registers[(CPU::instr >> 3) & 3UL] *= CPU::_registers[CPU::instr & 3UL];
+        break;
+    }
+    case 1:
+    case 2:
+    {
+        CPU::_registers[(CPU::instr & 3UL)] *= (CPU::instr >> 3) & 0x1FFFFFFFFFFFFF;
+        break;
+    }
+    case 3:
+    {
+        auto reg = CPU::instr & 3UL;
+        CPU::_registers[CPU::pc]++;
+        CPU::fetch();
+        auto mapped = map_mem(CPU::instr);
+        if (mapped.first == 1)
+        {
+            CPU::_registers[reg] *= CPU::data_memory.mem_read8(mapped.second);
+        }
+        else if (mapped.first == 2)
+        {
+            CPU::_registers[reg] *= CPU::data_memory.mem_read16(mapped.second);
+        }
+        else if (mapped.first == 4)
+        {
+            CPU::_registers[reg] *= CPU::data_memory.mem_read32(mapped.second);
+        }
+        else if (mapped.first == 8)
+        {
+            CPU::_registers[reg] *= CPU::data_memory.mem_read64(mapped.second);
+        }
+        break;
+    }
+    }
+}
+
+
+void InstructionsImpl::div()
+{
+    auto format = CPU::instr >> 56;
+    switch (format)
+    {
+    case 0:
+    {
+        // R-R
+        CPU::_registers[(CPU::instr >> 3) & 3UL] /= CPU::_registers[CPU::instr & 3UL];
+        break;
+    }
+    case 1:
+    case 2:
+    {
+        CPU::_registers[(CPU::instr & 3UL)] /= (CPU::instr >> 3) & 0x1FFFFFFFFFFFFF;
+        break;
+    }
+    case 3:
+    {
+        auto reg = CPU::instr & 3UL;
+        CPU::_registers[CPU::pc]++;
+        CPU::fetch();
+        auto mapped = map_mem(CPU::instr);
+        if (mapped.first == 1)
+        {
+            CPU::_registers[reg] /= CPU::data_memory.mem_read8(mapped.second);
+        }
+        else if (mapped.first == 2)
+        {
+            CPU::_registers[reg] /= CPU::data_memory.mem_read16(mapped.second);
+        }
+        else if (mapped.first == 4)
+        {
+            CPU::_registers[reg] /= CPU::data_memory.mem_read32(mapped.second);
+        }
+        else if (mapped.first == 8)
+        {
+            CPU::_registers[reg] /= CPU::data_memory.mem_read64(mapped.second);
+        }
+        break;
+    }
+    }
+}
+
+void instructionsImpl::inc()
+{
+  //  00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+// takes a register as thr only operand and increments it
+CPU::_registers[CPU::instr & 3UL]++;
+}
+
+void instructionsImpl::dec()
+{
+  //  00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+// takes a register as thr only operand and increments it
+CPU::_registers[CPU::instr & 3UL]--;
+}
+
+void InstructionsImpl::neg()
+{
+//this just takes a register as operand and applies two's complement on its value
+CPU::_registers[CPU::instr & 3UL] = two_complement(CPU::_registers[CPU::instr & 3UL]);
+}
+
 #endif
-/*
-    void add();
-    void sub();
-    void mul();
-    void div();
-    void inc();
-    void dec();
-    void neg();
-*/
 //  00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
