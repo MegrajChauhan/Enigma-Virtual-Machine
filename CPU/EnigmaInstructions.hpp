@@ -841,7 +841,7 @@ CPU::_registers[CPU::instr & 3UL]--;
 void InstructionsImpl::neg()
 {
 //this just takes a register as operand and applies two's complement on its value
-CPU::_registers[CPU::instr & 3UL] = two_complement(CPU::_registers[CPU::instr & 3UL]);
+CPU::_registers[CPU::instr & 3UL] = twoComplement(CPU::_registers[CPU::instr & 3UL]);
 }
 
 #endif
