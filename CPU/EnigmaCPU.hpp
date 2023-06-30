@@ -8,9 +8,113 @@
 #define STACK_START 0x0
 #define STACK_END 0xFF
 
-#define DATA_MEM_START  0x100;
+#define DATA_MEM_START 0x100;
 
 static std::uint64_t start_reading_instrs = DATA_MEM_START;
+
+static std::uint64_t sign_Ext(std::uint64_t toext, int ext_bit)
+{
+    if (ext_bit == 1)
+    {
+        return toext & 0b1111111111111111111111111111111111111111111111111111111111111111;
+    }
+    return toext;
+}
+
+static std::uint64_t zero_Ext(std::uint64_t toext)
+{
+    return toext | 0UL;
+}
+
+static std::uint64_t twoComplement(std::uint64_t _bin)
+{
+    return ~(_bin) + 1;
+}
+
+static std::uint64_t reverse_complement(std::uint64_t torev)
+{
+    return ~(torev - 1);
+}
+
+static std::uint64_t strtoNum(std::string str)
+{
+    std::uint64_t res = 0;
+    int pow = str.length();
+    bool is_neg = false;
+    if (str[0] == '-')
+    {
+        is_neg = true;
+    }
+    for (char x : str)
+    {
+        switch (x)
+        {
+        case '1':
+            res = res * std::pow(10, pow) + 1;
+            break;
+        case '2':
+            res = res * std::pow(10, pow) + 2;
+            break;
+        case '3':
+            res = res * std::pow(10, pow) + 3;
+            break;
+        case '4':
+            res = res * std::pow(10, pow) + 4;
+            break;
+        case '5':
+            res = res * std::pow(10, pow) + 5;
+            break;
+        case '6':
+            res = res * std::pow(10, pow) + 6;
+            break;
+        case '7':
+            res = res * std::pow(10, pow) + 7;
+            break;
+        case '8':
+            res = res * std::pow(10, pow) + 8;
+            break;
+        case '9':
+            res = res * std::pow(10, pow) + 9;
+            break;
+        case '0':
+            res = res * std::pow(10, pow);
+            break;
+        case '-':
+            pow++;
+            break;
+        }
+        pow--;
+    }
+    if (is_neg)
+    {
+        res = twoComplement(sign_Ext(res, 1));
+    }
+    else
+    {
+        res = sign_Ext(res, 0);
+    }
+    return res;
+}
+
+static float strtoDec32(std::string num)
+{
+    std::uint32_t res;
+    res = strtoNum(num.substr(0, num.find_first_of('.')));
+    std::string dec = num.substr(num.find_first_of('.') + 1);
+    res = ((res << 1) | 1) << 16;
+    res |= (strtoNum(dec));
+    return res;
+}
+
+double strtoDec64(std::string num)
+{
+    std::uint64_t res;
+    res = strtoNum(num.substr(0, num.find_first_of('.')));
+    std::string dec = num.substr(num.find_first_of('.'));
+    res = ((res << 1) | 1) << 32;
+    res &= (strtoNum(dec));
+    return res;
+}
 
 namespace CPU
 {
@@ -39,8 +143,6 @@ namespace CPU
     enum Flags : byte
     {
         ZERO,
-        NEGATIVE,
-        NON_NEGATIVE,
         NONZERO,
         GREATER,
         SMALLER,
@@ -53,43 +155,43 @@ namespace CPU
 
     enum Instructions
     {
-        NOP, //the no operation instruction which means don't do anything
-        //basic arithmetic operations
+        NOP, // the no operation instruction which means don't do anything
+        // basic arithmetic operations
         ADD,
         SUB,
         MUL,
         DIV,
         INC,
         DEC,
-        NEG, //make the value at specified register negative by applying 2's complement
+        NEG, // make the value at specified register negative by applying 2's complement
 
-        //logical operations
+        // logical operations
         AND,
         NOT,
         OR,
         XOR,
-        LSHIFT, //shift the value left at the specified register by the specified bits
-        RSHIFT, //shift the value right at the specified register by the specified bits
+        LSHIFT, // shift the value left at the specified register by the specified bits
+        RSHIFT, // shift the value right at the specified register by the specified bits
 
-        //register based operations
+        // register based operations
         MOV,
-        MOVZX, //zero-extend and move making it 64 bit
-        MOVSX, //sign extend and move making it 64 bit but sign extended
-        STORE, //store address or immediates
-        LOAD,  //load value from given address
-        LEA,   // load the given address to the given register
-        PUSH,  //push all of the values in every register in a specific order to the stack
-        POP,   //pop all of the values to every register in a specific order from the stack
-        PUSH_REG, //push specific register to the stack
-        POP_REG,  //pop to specific register from the stack
+        MOVZX,    // zero-extend and move making it 64 bit
+        MOVSX,    // sign extend and move making it 64 bit but sign extended
+        STORE,    // store address or immediates
+        LOAD,     // load value from given address
+        LEA,      // load the given address to the given register
+        PUSH,     // push all of the values in every register in a specific order to the stack
+        POP,      // pop all of the values to every register in a specific order from the stack
+        PUSH_REG, // push specific register to the stack
+        POP_REG,  // pop to specific register from the stack
 
-        //conditional jumps
+        // conditional jumps
         CMP,
         JMP,
         JZ,
         JNZ,
-        JN, //jmp if negative
-        JNN,//jmp if not negative
+        JN,  // jmp if negative
+        JNN, // jmp if not negative
         JE,
         JNE,
         JG,
@@ -97,7 +199,7 @@ namespace CPU
         JS,
         JSE,
 
-        //conditional operations for regsiters
+        // conditional operations for regsiters
         MOVZ,
         MOVNZ,
         MOVN,
@@ -109,18 +211,14 @@ namespace CPU
         MOVS,
         MOVSE,
 
-        //extensions
-        EXT, //sign extend the value in specified register
-        ZEXT, //zero extend the value in specified register
-
-        //call is equivalent to jmp and this will be handled by the assembler generating the code
+        // call is equivalent to jmp and this will be handled by the assembler generating the code
 
         HALT,
         SYSCALL,
     };
 
-    //6 bits will be dedicated to instructions since it implies for a possiblility of 63 instructions and we
-    //currently have 50 leaving 13 for expansion
+    // 6 bits will be dedicated to instructions since it implies for a possiblility of 63 instructions and we
+    // currently have 50 leaving 13 for expansion
 
     static qword _registers[regr_count];
     static byte flags[FLAGS_COUNT];
@@ -143,13 +241,43 @@ namespace CPU
     {
         curr_instr = (instr >> 58);
     }
-    
+
 #include "EnigmaInstructions.hpp"
 
     inline void execute()
     {
         switch (curr_instr)
         {
+        case CMP:
+            InstructionsImpl::cmp();
+            break;
+        case JMP:
+            InstructionsImpl::jmp();
+            break;
+        case JE:
+            InstructionsImpl::je();
+            break;
+        case JG:
+            InstructionsImpl::jg();
+            break;
+        case JGE:
+            InstructionsImpl::jge();
+            break;
+        case JNE:
+            InstructionsImpl::jne();
+            break;
+        case JNZ:
+            InstructionsImpl::jnz();
+            break;
+        case JS:
+            InstructionsImpl::js();
+            break;
+        case JSE:
+            InstructionsImpl::jse();
+            break;
+        case JZ:
+            InstructionsImpl::jz();
+            break;
         case NOP:
             break;
         case SYSCALL:
