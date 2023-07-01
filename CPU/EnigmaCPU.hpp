@@ -6,12 +6,12 @@
 #ifndef ENIGMA_MANAGER
 #include "../Manager/EnigmaManager.hpp"
 #endif
-#define STACK_START 0x0
-#define STACK_END 0xFF
+#define STACK_START 0x5
+#define STACK_END 0x104
 
-#define DATA_MEM_START 0x100;
+#define DATA_MEM_START 0x105;
 
-static std::uint64_t start_reading_instrs = DATA_MEM_START;
+static std::uint64_t start_data_mem = DATA_MEM_START;
 
 static std::uint64_t sign_Ext(std::uint64_t toext, int ext_bit)
 {
@@ -88,7 +88,7 @@ static std::uint64_t strtoNum(std::string str)
     }
     if (is_neg)
     {
-        res = twoComplement(sign_Ext(res, 1));
+        res = twoComplement(sign_Ext(res, 0));
     }
     else
     {
@@ -122,7 +122,7 @@ namespace CPU
     static Memory instruction_memory;
     static Memory data_memory;
 
-    static std::uint64_t mem_pointer = DATA_MEM_START;
+    static std::uint64_t mem_pointer = 0x0;
 
     static bool running = true;
 
@@ -152,6 +152,12 @@ namespace CPU
         GREATER_EQ,
         SMALLER_EQ,
         FLAGS_COUNT
+    };
+
+    enum MemMappedRegrs: qword
+    {
+       KEYS = 0x0,
+       KEYD = 0x1,
     };
 
     enum Instructions
@@ -395,6 +401,7 @@ namespace CPU
             execute();
             _registers[pc] += 8;
         }
+        exit(_registers[ar]);
     }
 };
 

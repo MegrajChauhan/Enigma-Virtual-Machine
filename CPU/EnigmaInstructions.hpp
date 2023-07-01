@@ -7,9 +7,6 @@
 // because 3 bits cannot address more than 7 registers, it is impossible for users
 // to address sp and pc and cause mayhem
 
-#ifndef ENIGMA_CPU
-#include "EnigmaCPU.hpp"
-#endif
 
 namespace InstructionsImpl
 {
@@ -75,6 +72,10 @@ std::pair<std::uint8_t, std::uint64_t> map_mem(std::uint64_t addr)
     // then the remaining is the actual memory address
     return std::make_pair((addr >> 60) & 15, addr & 0xFFFFFFFFFFFFFFF);
 }
+
+#ifndef ENIGMA_CPU
+#include "EnigmaCPU.hpp"
+#endif
 
 /*
 this function basically compares the values at given registers and

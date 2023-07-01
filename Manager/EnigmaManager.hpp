@@ -34,7 +34,6 @@ namespace Manager
     inline void start_execution();
 };
 
-#include "../CPU/EnigmaCPU.hpp"
 #include "EnigmaSyscalls.hpp"
 
 void Manager::load_instructions(std::vector<qword> &instructions)
@@ -61,13 +60,13 @@ void Manager::load_data8(std::vector<qword> &data)
         CPU::data_memory.pointer_limit_increase(data.size() - 1024 - 255);
         CPU::data_memory.resize(data.size() - 1024 - 255);
     }
-    qword mem_addr = CPU::mem_pointer;
+    qword mem_addr = start_data_mem;
     for (auto x : data)
     {
         CPU::data_memory.mem_write8(mem_addr, x);
         mem_addr++;
     }
-    CPU::mem_pointer = mem_addr;
+    start_data_mem = mem_addr;
 }
 
 void Manager::load_data16(std::vector<qword> &data)
@@ -77,13 +76,13 @@ void Manager::load_data16(std::vector<qword> &data)
         CPU::data_memory.pointer_limit_increase(data.size() - 1024 - 255);
         CPU::data_memory.resize(data.size() - 1024 - 255);
     }
-    qword mem_addr = CPU::mem_pointer;
+    qword mem_addr = start_data_mem;
     for (auto x : data)
     {
         CPU::data_memory.mem_write16(mem_addr, x);
         mem_addr += 2;
     }
-    CPU::mem_pointer = mem_addr;
+    start_data_mem = mem_addr;
 }
 
 void Manager::load_data32(std::vector<qword> &data)
@@ -93,13 +92,13 @@ void Manager::load_data32(std::vector<qword> &data)
         CPU::data_memory.pointer_limit_increase(data.size() - 1024 - 255);
         CPU::data_memory.resize(data.size() - 1024 - 255);
     }
-    qword mem_addr = CPU::mem_pointer;
+    qword mem_addr = start_data_mem;
     for (auto x : data)
     {
         CPU::data_memory.mem_write32(mem_addr, x);
         mem_addr += 4;
     }
-    CPU::mem_pointer = mem_addr;
+    start_data_mem = mem_addr;
 }
 
 void Manager::load_data64(std::vector<qword> &data)
@@ -109,13 +108,13 @@ void Manager::load_data64(std::vector<qword> &data)
         CPU::data_memory.pointer_limit_increase(data.size() - 1024 - 255);
         CPU::data_memory.resize(data.size() - 1024 - 255);
     }
-    qword mem_addr = CPU::mem_pointer;
+    qword mem_addr = start_data_mem;
     for (auto x : data)
     {
         CPU::data_memory.mem_write64(mem_addr, x);
         mem_addr += 8;
     }
-    CPU::mem_pointer = mem_addr;
+    start_data_mem = mem_addr;
 }
 
 void Manager::handlesyscalls()
@@ -140,36 +139,27 @@ void Manager::handlesyscalls()
     case 9:
     case 10:
         break;
-    // case 11:
-    //     Syscalls::sysRead();
-    //     break;
-    // case 12:
-    //     Syscalls::sysReadBySize();
-    //     break;
-    // case 13:
-    //     Syscalls::sysReadAndSave();
-    //     break;
-    // case 14:
-    //     Syscalls::sysReadBySizeandSave();
-    //     break;
-    // case 15:
-    //     Syscalls::sysReadasFloat();
-    //     break;
-    // case 16:
-    //     Syscalls::sysReadAsNeg();
-    //     break;
-    // case 17:
-    //     Syscalls::sysDisplay();
-    //     break;
-    // case 18:
-    //     Syscalls::sysDisplayAsChar();
-    //     break;
-    // case 19:
-    //     Syscalls::sysDisplayAsFloats();
-    //     break;
-    // case 20:
-    //     Syscalls::sysDisplayAsNeg();
-    //     break;
+    case 11:
+        Syscalls::sysExit();
+        break;
+    case 12:
+        Syscalls::sysReadNum();
+        break;
+    case 13:
+        Syscalls::sysReadChar();
+        break;
+    case 14:
+        Syscalls::sysReadFloat();
+        break;
+    case 15:
+        Syscalls::sysWriteNum();
+        break;
+    case 16:
+        Syscalls::sysWriteChar();
+        break;
+    case 17:
+        Syscalls::sysWriteFloat();
+        break;
     }
 }
 

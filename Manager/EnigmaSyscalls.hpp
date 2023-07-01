@@ -1,8 +1,7 @@
 #ifndef ENIGMA_SYSCALLS
 #define ENIGMA_SYSCALLS
 
-#include "../memory/EnigmaMemory.hpp"
-#include "../CPU/EnigmaCPU.hpp"
+#include "../CPU/EnigmaInstructions.hpp"
 #include <cmath>
 
 namespace Syscalls
@@ -37,189 +36,140 @@ namespace Syscalls
         CPU::data_memory.add_size(__incr_by);
     }
 
-    // more calling numbers from 3 to 10 have been saved for potential sys functions increase in the future
-    // the most basic input operation
-    // asks for input[just one character]
-    // ar = 11 [saved to buffer]
-    inline void sysRead()
+    // calls from 3 to 10 have been reserved for more operations
+    // ar = 11
+    // br = exit code
+    inline void sysExit()
+    {
+        CPU::running = false;
+        CPU::_registers[CPU::ar] = CPU::_registers[CPU::br];
+    }
+
+    // ar = 12
+    // br = memory address to store the read data
+    inline void sysReadNum()
     {
         std::uint64_t in;
         std::cin >> in;
-        Manager::buffer.push_back(in);
-    }
-
-    // another way for taking input
-    // asks for input[for the specified number of characters]
-    // ar = 12
-    // br = read size
-    // this is also saved to the buffer
-    inline void sysReadBySize()
-    {
-        for (int i = 0; i < CPU::_registers[CPU::br]; i++)
+        auto mapped = map_mem(CPU::_registers[CPU::br]);
+        switch (mapped.first)
         {
-            sysRead();
+        case 1:
+            CPU::data_memory.mem_write8(mapped.second, in);
+            break;
+        case 2:
+            CPU::data_memory.mem_write16(mapped.second, in);
+            break;
+        case 4:
+            CPU::data_memory.mem_write32(mapped.second, in);
+            break;
+        case 8:
+            CPU::data_memory.mem_write64(mapped.second, in);
+            break;
         }
     }
 
-    // take input and save it to the specified memory location
     // ar = 13
-    // br = memory address
-    // just one character
-    inline void sysReadAndSave()
+    // br = memory address to store
+    // cr = length of characters to be read
+    inline void sysReadChar()
     {
-        std::uint64_t in;
-        std::cin >> in;
-        CPU::data_memory.mem_write8(CPU::_registers[CPU::br], in);
+        //this is not how it should be
+        auto mapped = map_mem(CPU::_registers[CPU::br]);
+        for (std::uint64_t i = 0; i < CPU::_registers[CPU::cr]; i++)
+        {
+            char in;
+            std::cin >> in;
+            CPU::data_memory.mem_write8(mapped.second + i, (int)in);
+        }
     }
 
-    // take input upto a specified size and save it to the specified memory
     // ar = 14
     // br = memory address
-    // cr = input length
-    inline void sysReadBySizeandSave()
+    inline void sysReadFloat()
     {
-        for (int i = 0; i < CPU::_registers[CPU::cr]; i++)
+        std::string in;
+        std::cin >> in;
+        auto mapped = map_mem(CPU::_registers[CPU::br]);
+        switch (mapped.first)
         {
-            sysReadAndSave();
-            CPU::_registers[CPU::br]++;
+        case 4:
+            CPU::data_memory.mem_write32(mapped.second, strtoDec32(in));
+            break;
+        case 8:
+            CPU::data_memory.mem_write64(mapped.second, strtoDec64(in));
+            break;
+        default:
+            std::cerr << "Error: Float implementation only supports 4 bytes or 8 bytes." << std::endl;
+            exit(-1);
         }
     }
 
-    // for reading floating point numbers
-    // and the number must be stored in memory
     // ar = 15
-    // br = memory address
-    // cr = size[either 4 or 8]
-    inline void sysReadasFloat()
+    // br = address
+    inline void sysWriteNum()
     {
-        // for those who wonder:
-        // if the input float is incorrect, 0 is stored in memory directly
-        // there will be no error messages.
-        std::string in;
-        std::cin >> in;
-        if (CPU::_registers[CPU::cr] == 4)
+        auto mapped = map_mem(CPU::_registers[CPU::br]);
+        std::uint64_t val;
+        switch (mapped.first)
         {
-            CPU::data_memory.mem_write32(CPU::_registers[CPU::br], strtoDec32(in));
+        case 1:
+            val = CPU::data_memory.mem_read8(mapped.second);
+            break;
+        case 2:
+            val = CPU::data_memory.mem_read16(mapped.second);
+            break;
+        case 4:
+            val = CPU::data_memory.mem_read32(mapped.second);
+            break;
+        case 8:
+            val = CPU::data_memory.mem_read64(mapped.second);
+            break;
         }
-        else if (CPU::_registers[CPU::cr] == 8)
+        if ((val >> 63) == 1)
         {
-            CPU::data_memory.mem_write64(CPU::_registers[CPU::br], strtoDec64(in));
+            std::cout << '-' << reverse_complement(val);
+        }
+        else
+        {
+            std::cout << val;
         }
     }
 
-    // for negative numbers
     // ar = 16
-    // br = memory address
-    // cr = size
-    inline void sysReadAsNeg()
+    // br = address
+    // cr = number of characters to write
+    inline void sysWriteChar()
     {
-        std::string in;
-        std::cin >> in;
-        switch (CPU::_registers[CPU::cr])
+        auto mapped = map_mem(CPU::_registers[CPU::br]);
+        for (std::uint64_t i = 0; i < CPU::_registers[CPU::cr]; i++)
         {
-        case 1:
-            CPU::data_memory.mem_write8(CPU::_registers[CPU::br], strtoNum(in));
-            break;
-        case 2:
-            CPU::data_memory.mem_write16(CPU::_registers[CPU::br], strtoNum(in));
-            break;
-        case 4:
-            CPU::data_memory.mem_write32(CPU::_registers[CPU::br], strtoNum(in));
-            break;
-        case 8:
-            CPU::data_memory.mem_write64(CPU::_registers[CPU::br], strtoNum(in));
-            break;
+            std::cout << (char)CPU::data_memory.mem_read8(mapped.second + i);
         }
     }
 
-    // The reason for making specific functions for each function instead of providing modes through other registers
-    // is to make it easier to maintain
-
-    // for most basic output
-    // display a number from the top of the buffer or from a memory address
     // ar = 17
-    // br = 0/1
-    // cr = memory address if br = 0
-    // this displays the everything as numbers since everything is stored as a number
-    inline void sysDisplay()
-    {
-        if (Manager::buffer.size() == 0)
-        {
-            return;
-        }
-        if (CPU::_registers[CPU::br] == 1)
-        {
-            std::cout << Manager::buffer[0];
-            Manager::buffer.erase(Manager::buffer.begin());
-        }
-        else
-        {
-            std::cout << CPU::data_memory.mem_read8(CPU::_registers[CPU::br]);
-        }
-    }
-
-    // display as character
-    // ar = 18
-    // br = 0/1
-    // cr = memory address if br = 0
-    inline void sysDisplayAsChar()
-    {
-        if (Manager::buffer.size() == 0)
-        {
-            return;
-        }
-        if (CPU::_registers[CPU::br] == 1)
-        {
-            std::cout << (char)Manager::buffer[0];
-            Manager::buffer.erase(Manager::buffer.begin());
-        }
-        else
-        {
-            std::cout << (char)CPU::data_memory.mem_read8(CPU::_registers[CPU::br]);
-        }
-    }
-
-    // display as decimal numbers
-    // ar = 19
     // br = memory address
-    // cr = size[what is the size of the decimal point? 4 bytes or 8 bytes]
-    inline void sysDisplayAsFloats()
+    inline void sysWriteFloat()
     {
-        if (CPU::_registers[CPU::cr] == 4)
+        auto mapped = map_mem(CPU::_registers[CPU::br]);
+        std::uint64_t num;
+        switch (mapped.first)
         {
-            auto num = CPU::data_memory.mem_read32(CPU::_registers[CPU::br]);
-            std::cout << (num >> 15) << '.' << (num & 0b1111111111111111);
-        }
-        else
-        {
-            auto num = CPU::data_memory.mem_read64(CPU::_registers[CPU::br]);
-            std::cout << (num >> 33) << '.' << (num & 0b11111111111111111111111111111111);
-        }
-    }
-
-    // display negative numbers
-    // ar = 20
-    // br = memory address
-    // cr = memory size
-    inline void sysDisplayAsNeg()
-    {
-        //  std::cout<<"-"<<reverse_complement(CPU::data_memor)
-        switch (CPU::_registers[CPU::cr])
-        {
-        case 1:
-            std::cout<<"-"<<CPU::data_memory.mem_read8(CPU::_registers[CPU::br]);
-            break;
-        case 2:
-            std::cout<<"-"<<CPU::data_memory.mem_read16(CPU::_registers[CPU::br]);
-            break;
         case 4:
-            std::cout<<"-"<<CPU::data_memory.mem_read32(CPU::_registers[CPU::br]);
+            num = CPU::data_memory.mem_read32(CPU::_registers[CPU::br]);
+            std::cout << (num >> 15) << '.' << (num & 0b1111111111111111);
             break;
         case 8:
-            std::cout<<"-"<<CPU::data_memory.mem_read64(CPU::_registers[CPU::br]);
+            num = CPU::data_memory.mem_read64(CPU::_registers[CPU::br]);
+            std::cout << (num >> 33) << '.' << (num & 0b11111111111111111111111111111111);
             break;
+        default:
+            std::cerr << "Error: Float implementation only supports 4 bytes or 8 bytes." << std::endl;
+            exit(-1);
         }
     }
+   
 };
 
 #endif
