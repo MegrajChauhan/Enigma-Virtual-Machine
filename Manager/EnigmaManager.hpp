@@ -140,36 +140,36 @@ void Manager::handlesyscalls()
     case 9:
     case 10:
         break;
-    case 11:
-        Syscalls::sysRead();
-        break;
-    case 12:
-        Syscalls::sysReadBySize();
-        break;
-    case 13:
-        Syscalls::sysReadAndSave();
-        break;
-    case 14:
-        Syscalls::sysReadBySizeandSave();
-        break;
-    case 15:
-        Syscalls::sysReadasFloat();
-        break;
-    case 16:
-        Syscalls::sysReadAsNeg();
-        break;
-    case 17:
-        Syscalls::sysDisplay();
-        break;
-    case 18:
-        Syscalls::sysDisplayAsChar();
-        break;
-    case 19:
-        Syscalls::sysDisplayAsFloats();
-        break;
-    case 20:
-        Syscalls::sysDisplayAsNeg();
-        break;
+    // case 11:
+    //     Syscalls::sysRead();
+    //     break;
+    // case 12:
+    //     Syscalls::sysReadBySize();
+    //     break;
+    // case 13:
+    //     Syscalls::sysReadAndSave();
+    //     break;
+    // case 14:
+    //     Syscalls::sysReadBySizeandSave();
+    //     break;
+    // case 15:
+    //     Syscalls::sysReadasFloat();
+    //     break;
+    // case 16:
+    //     Syscalls::sysReadAsNeg();
+    //     break;
+    // case 17:
+    //     Syscalls::sysDisplay();
+    //     break;
+    // case 18:
+    //     Syscalls::sysDisplayAsChar();
+    //     break;
+    // case 19:
+    //     Syscalls::sysDisplayAsFloats();
+    //     break;
+    // case 20:
+    //     Syscalls::sysDisplayAsNeg();
+    //     break;
     }
 }
 

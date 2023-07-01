@@ -62,6 +62,9 @@ namespace InstructionsImpl
     void dec();
     void neg();
 
+    // memory operation
+    void save();
+
 };
 
 std::pair<std::uint8_t, std::uint64_t> map_mem(std::uint64_t addr)
@@ -89,6 +92,8 @@ void InstructionsImpl::cmp()
     {
         CPU::flags[CPU::ZERO] = 1; // 1 means yes and 0 means no
         CPU::flags[CPU::NONZERO] = 0;
+        CPU::flags[CPU::EQUAL] = 1;
+        CPU::flags[CPU::NOT_EQ] = 0;
     }
     else
     {
@@ -146,10 +151,11 @@ void InstructionsImpl::jmp()
     //  00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
     // first 6 bits for instruction and since we have a 64-bit addresses,
     // all other bits here are reserved and the actual destination is in the next address
-    CPU::fetch(); // update the memory
-    // since we have implemented in the assembler, the first 6 bits of an address actually tell us
-    // about the length of the address but since we are working with instructions that is irrelevent
+    CPU::_registers[CPU::pc] += 8;
+    CPU::fetch();                          // update the memory
     CPU::_registers[CPU::pc] = CPU::instr; // update the counter
+    // when jmp is called, the address is not mapped first. This is because the jumping address must be from the
+    // instruction memory only which is always 64 bits.
 }
 
 // all of the conditional jumps basically call the jmp function only when an condition is fulfilled
@@ -160,6 +166,8 @@ void InstructionsImpl::jz()
     if (CPU::flags[CPU::ZERO] == 1)
     {
         jmp();
+    }else{
+        CPU::_registers[CPU::pc]+=8; //go past the address
     }
 }
 
@@ -169,6 +177,8 @@ void InstructionsImpl::jnz()
     if (CPU::flags[CPU::ZERO] != 1)
     {
         jmp();
+    }else{
+        CPU::_registers[CPU::pc]+=8; //go past the address
     }
 }
 
@@ -178,15 +188,19 @@ void InstructionsImpl::je()
     if (CPU::flags[CPU::EQUAL] == 1)
     {
         jmp();
+    }else{
+        CPU::_registers[CPU::pc]+=8; //go past the address
     }
 }
 
 void InstructionsImpl::jne()
 {
     // if equal flag is not set, jmp
-    if (CPU::flags[CPU::EQUAL] != 1)
+    if (CPU::flags[CPU::EQUAL] != 1 && CPU::flags[CPU::NOT_EQ] == 1)
     {
         jmp();
+    }else{
+        CPU::_registers[CPU::pc]+=8; //go past the address
     }
 }
 
@@ -196,6 +210,8 @@ void InstructionsImpl::jg()
     if (CPU::flags[CPU::GREATER] == 1)
     {
         jmp();
+    }else{
+        CPU::_registers[CPU::pc]+=8; //go past the address
     }
 }
 
@@ -205,6 +221,8 @@ void InstructionsImpl::jge()
     if (CPU::flags[CPU::GREATER_EQ] == 1 || CPU::flags[CPU::GREATER] == 1)
     {
         jmp();
+    }else{
+        CPU::_registers[CPU::pc]+=8; //go past the address
     }
 }
 
@@ -214,6 +232,8 @@ void InstructionsImpl::js()
     if (CPU::flags[CPU::SMALLER] == 1)
     {
         jmp();
+    }else{
+        CPU::_registers[CPU::pc]+=8; //go past the address
     }
 }
 
@@ -223,6 +243,8 @@ void InstructionsImpl::jse()
     if (CPU::flags[CPU::SMALLER_EQ] == 1 || CPU::flags[CPU::SMALLER] == 1)
     {
         jmp();
+    }else{
+        CPU::_registers[CPU::pc]+=8; //go past the address
     }
 }
 
@@ -453,7 +475,7 @@ void InstructionsImpl::load()
 void InstructionsImpl::lea()
 {
     // this is the same as store except, it stores the address instead of the value AND directly to ar
-    CPU::_registers[CPU::pc]++;
+    CPU::_registers[CPU::pc] += 8;
     CPU::fetch(); // address must be in the next address
     CPU::_registers[CPU::ar] = CPU::instr;
 }
@@ -648,7 +670,7 @@ void InstructionsImpl::add()
     // 000000 00 00000000 00000000 00000000 00000000 00000000 00000000 00000 000
     // add can be of 4 types: register-register, register-immediate, immediate-register, register-memory
     // register-immediate and immediate-register are the same with different representing bits
-    auto format = CPU::instr >> 56;
+    auto format = (CPU::instr >> 56) & 3UL;
     switch (format)
     {
     case 0:
@@ -666,7 +688,7 @@ void InstructionsImpl::add()
     case 3:
     {
         auto reg = CPU::instr & 3UL;
-        CPU::_registers[CPU::pc]++;
+        CPU::_registers[CPU::pc] += 8;
         CPU::fetch();
         auto mapped = map_mem(CPU::instr);
         if (mapped.first == 1)
@@ -692,7 +714,7 @@ void InstructionsImpl::add()
 
 void InstructionsImpl::sub()
 {
-    auto format = CPU::instr >> 56;
+    auto format = (CPU::instr >> 56) & 3UL;
     switch (format)
     {
     case 0:
@@ -710,7 +732,7 @@ void InstructionsImpl::sub()
     case 3:
     {
         auto reg = CPU::instr & 3UL;
-        CPU::_registers[CPU::pc]++;
+        CPU::_registers[CPU::pc] += 8;
         CPU::fetch();
         auto mapped = map_mem(CPU::instr);
         if (mapped.first == 1)
@@ -734,10 +756,9 @@ void InstructionsImpl::sub()
     }
 }
 
-
 void InstructionsImpl::mul()
 {
-    auto format = CPU::instr >> 56;
+    auto format = (CPU::instr >> 56) & 3UL;
     switch (format)
     {
     case 0:
@@ -755,7 +776,7 @@ void InstructionsImpl::mul()
     case 3:
     {
         auto reg = CPU::instr & 3UL;
-        CPU::_registers[CPU::pc]++;
+        CPU::_registers[CPU::pc] += 8;
         CPU::fetch();
         auto mapped = map_mem(CPU::instr);
         if (mapped.first == 1)
@@ -779,10 +800,9 @@ void InstructionsImpl::mul()
     }
 }
 
-
 void InstructionsImpl::div()
 {
-    auto format = CPU::instr >> 56;
+   auto format = (CPU::instr >> 56) & 3UL;
     switch (format)
     {
     case 0:
@@ -800,7 +820,7 @@ void InstructionsImpl::div()
     case 3:
     {
         auto reg = CPU::instr & 3UL;
-        CPU::_registers[CPU::pc]++;
+        CPU::_registers[CPU::pc] += 8;
         CPU::fetch();
         auto mapped = map_mem(CPU::instr);
         if (mapped.first == 1)
@@ -824,24 +844,50 @@ void InstructionsImpl::div()
     }
 }
 
-void instructionsImpl::inc()
+void InstructionsImpl::inc()
 {
-  //  00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-// takes a register as thr only operand and increments it
-CPU::_registers[CPU::instr & 3UL]++;
+    //  00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    // takes a register as the only operand and increments it
+    CPU::_registers[CPU::instr & 3UL]++;
 }
 
-void instructionsImpl::dec()
+void InstructionsImpl::dec()
 {
-  //  00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-// takes a register as thr only operand and increments it
-CPU::_registers[CPU::instr & 3UL]--;
+    //  00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    // takes a register as the only operand and increments it
+    CPU::_registers[CPU::instr & 3UL]--;
 }
 
 void InstructionsImpl::neg()
 {
-//this just takes a register as operand and applies two's complement on its value
-CPU::_registers[CPU::instr & 3UL] = twoComplement(CPU::_registers[CPU::instr & 3UL]);
+    // this just takes a register as operand and applies two's complement on its value
+    CPU::_registers[CPU::instr & 3UL] = twoComplement(CPU::_registers[CPU::instr & 3UL]);
+}
+
+void InstructionsImpl::save()
+{
+    //  00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    //  this takes a destination register and stores it in given memory address
+    auto reg = CPU::instr & 3UL;
+    CPU::_registers[CPU::pc] += 8;
+    CPU::fetch();
+    auto mapped = map_mem(CPU::instr);
+    if (mapped.first == 1)
+    {
+        CPU::data_memory.mem_write8(mapped.second, CPU::_registers[reg]);
+    }
+    else if (mapped.first == 2)
+    {
+        CPU::data_memory.mem_write16(mapped.second, CPU::_registers[reg]);
+    }
+    else if (mapped.first == 4)
+    {
+        CPU::data_memory.mem_write32(mapped.second, CPU::_registers[reg]);
+    }
+    else if (mapped.first == 8)
+    {
+        CPU::data_memory.mem_write64(mapped.second, CPU::_registers[reg]);
+    }
 }
 
 #endif

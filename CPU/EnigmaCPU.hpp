@@ -1,6 +1,7 @@
 #ifndef ENIGMA_CPU
 #define ENIGMA_CPU
 
+#include <cmath>
 #include "../memory/EnigmaMemory.hpp"
 #ifndef ENIGMA_MANAGER
 #include "../Manager/EnigmaManager.hpp"
@@ -202,8 +203,6 @@ namespace CPU
         // conditional operations for regsiters
         MOVZ,
         MOVNZ,
-        MOVN,
-        MOVNN,
         MOVE,
         MOVNE,
         MOVG,
@@ -212,6 +211,8 @@ namespace CPU
         MOVSE,
 
         // call is equivalent to jmp and this will be handled by the assembler generating the code
+
+        SAVE, // for saving something to the memory
 
         HALT,
         SYSCALL,
@@ -252,7 +253,7 @@ namespace CPU
             InstructionsImpl::add();
             break;
         case SUB:
-            InstructionsImpl::sub ();
+            InstructionsImpl::sub();
             break;
         case MUL:
             InstructionsImpl::mul();
@@ -293,11 +294,14 @@ namespace CPU
         case POP:
             InstructionsImpl::pop();
             break;
-        case PUSH_REGR:
+        case PUSH_REG:
             InstructionsImpl::pushr();
             break;
-        case POP_REGR:
+        case POP_REG:
             InstructionsImpl::popr();
+            break;
+        case SAVE:
+            InstructionsImpl::save();
             break;
         case AND:
             InstructionsImpl::iand();
@@ -353,12 +357,6 @@ namespace CPU
         case MOVNZ:
             InstructionsImpl::movnz();
             break;
-        case MOVN:
-            InstructionsImpl::movn();
-            break;
-        case MOVNN:
-            InstructionsImpl::movnn();
-            break;
         case MOVE:
             InstructionsImpl::move();
             break;
@@ -367,7 +365,7 @@ namespace CPU
             break;
         case MOVG:
             InstructionsImpl::movg();
-            break;       
+            break;
         case MOVGE:
             InstructionsImpl::movge();
             break;
@@ -376,7 +374,7 @@ namespace CPU
             break;
         case MOVSE:
             InstructionsImpl::movse();
-            break;       
+            break;
         case NOP:
             break;
         case SYSCALL:
@@ -395,7 +393,7 @@ namespace CPU
             fetch();
             decode();
             execute();
-            _registers[pc]++;
+            _registers[pc] += 8;
         }
     }
 };
